@@ -43,10 +43,10 @@ def cmd_compress(args, airtable_client):
         try:
             logger.info(f"Compressing data for applicant {app_id}...")
             compress_and_save(airtable_client, app_id)
-            logger.info(f"✓ Successfully compressed applicant {app_id}")
+            logger.info(f"[SUCCESS] Successfully compressed applicant {app_id}")
             success_count += 1
         except Exception as e:
-            logger.error(f"✗ Failed to compress applicant {app_id}: {e}")
+            logger.error(f"[FAILED] Failed to compress applicant {app_id}: {e}")
             failed_count += 1
     
     logger.info(f"\nCompression complete: {success_count} success, {failed_count} failed")
@@ -62,9 +62,9 @@ def cmd_decompress(args, airtable_client):
     try:
         logger.info(f"Decompressing data for applicant {args.applicant_id}...")
         results = decompress_applicant_data(airtable_client, args.applicant_id)
-        
-        logger.info(f"✓ Successfully decompressed applicant {args.applicant_id}")
-        
+
+        logger.info(f"[SUCCESS] Successfully decompressed applicant {args.applicant_id}")
+
         if "personal_details" in results:
             logger.info("  - Updated Personal Details")
         if "work_experiences" in results:
@@ -72,10 +72,10 @@ def cmd_decompress(args, airtable_client):
             logger.info(f"  - Updated {count} Work Experience record(s)")
         if "salary_preferences" in results:
             logger.info("  - Updated Salary Preferences")
-        
+
         return True
     except Exception as e:
-        logger.error(f"✗ Failed to decompress applicant {args.applicant_id}: {e}")
+        logger.error(f"[FAILED] Failed to decompress applicant {args.applicant_id}: {e}")
         return False
 
 
@@ -107,13 +107,13 @@ def cmd_evaluate(args, airtable_client, config):
             # Shortlist evaluation
             logger.info("Running shortlist evaluation...")
             shortlist_result = process_shortlist(airtable_client, app_id)
-            
+
             if shortlist_result["is_qualified"]:
-                logger.info(f"✓ Applicant {app_id} SHORTLISTED")
+                logger.info(f"[SHORTLISTED] Applicant {app_id}")
                 shortlisted_count += 1
             else:
-                logger.info(f"✗ Applicant {app_id} NOT shortlisted")
-            
+                logger.info(f"[NOT SHORTLISTED] Applicant {app_id}")
+
             # LLM evaluation (unless skipped)
             if not args.skip_llm:
                 logger.info("\nRunning LLM evaluation...")
@@ -122,17 +122,17 @@ def cmd_evaluate(args, airtable_client, config):
                     config.openai_api_key,
                     app_id
                 )
-                
+
                 if llm_result.get("skipped"):
-                    logger.info(f"⊘ LLM evaluation skipped")
+                    logger.info(f"[SKIPPED] LLM evaluation")
                 else:
                     evaluation = llm_result["evaluation"]
-                    logger.info(f"✓ LLM Score: {evaluation['score']}/10")
-            
+                    logger.info(f"[SUCCESS] LLM Score: {evaluation['score']}/10")
+
             success_count += 1
-            
+
         except Exception as e:
-            logger.error(f"✗ Failed to evaluate applicant {app_id}: {e}")
+            logger.error(f"[FAILED] Failed to evaluate applicant {app_id}: {e}")
             failed_count += 1
     
     logger.info(f"\n{'='*60}")
