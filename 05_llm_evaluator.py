@@ -386,7 +386,7 @@ Examples:
 
     if success_count > 0:
         print("Next steps:")
-        print("  1. View LLM fields in Airtable: https://airtable.com/{base_id}")
+        print(f"  1. View LLM fields in Airtable: https://airtable.com/{base_id}")
         print("  2. Review LLM Summary, LLM Score, and LLM Follow-Ups columns")
         print("  3. Use insights for ALL candidates (shortlisted and rejected)")
     print()

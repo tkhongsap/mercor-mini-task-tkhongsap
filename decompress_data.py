@@ -371,7 +371,7 @@ Examples:
         print("Run without --dry-run to apply changes.")
     elif success_count > 0:
         print("Next steps:")
-        print("  1. Verify data in Airtable: https://airtable.com/{base_id}")
+        print(f"  1. Verify data in Airtable: https://airtable.com/{base_id}")
         print("  2. Check Personal Details, Work Experience, and Salary Preferences tables")
         print("  3. Run compress_data.py to regenerate JSON if needed")
     print()

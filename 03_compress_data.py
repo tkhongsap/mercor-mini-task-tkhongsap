@@ -232,7 +232,7 @@ Examples:
 
     if success_count > 0:
         print("Next steps:")
-        print("  1. View compressed JSON in Airtable: https://airtable.com/{base_id}")
+        print(f"  1. View compressed JSON in Airtable: https://airtable.com/{base_id}")
         print("  2. Run shortlist_evaluator.py to evaluate candidates")
         print("  3. Run llm_evaluator.py to enrich with LLM analysis")
         print()

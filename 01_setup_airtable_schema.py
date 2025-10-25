@@ -306,7 +306,7 @@ def main() -> None:
     print("Next Steps:")
     print("  1. Run tests to verify schema: python tests/test_runner.py")
     print("  2. Generate test data: python generate_test_data.py")
-    print("  3. View your base: https://airtable.com/{base_id}")
+    print(f"  3. View your base: https://airtable.com/{base_id}")
     print()
 
 if __name__ == "__main__":

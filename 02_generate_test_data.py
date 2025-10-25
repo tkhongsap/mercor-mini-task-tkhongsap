@@ -444,7 +444,7 @@ def main() -> None:
     print("  ✓ Multiple work experiences per applicant (1-3 jobs each)")
     print()
     print("Next steps:")
-    print("  1. View your base: https://airtable.com/{base_id}")
+    print(f"  1. View your base: https://airtable.com/{base_id}")
     print("  2. Run compress_data.py to test JSON compression")
     print("  3. Run shortlist_evaluator.py to test qualification logic")
     print("  4. Run llm_evaluator.py to test LLM enrichment")

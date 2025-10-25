@@ -405,7 +405,7 @@ def main() -> None:
     print(f"Shortlisted Leads table now has {qualified_count} record(s)")
     print()
     print("Next steps:")
-    print("  1. View Shortlisted Leads: https://airtable.com/{base_id}")
+    print(f"  1. View Shortlisted Leads: https://airtable.com/{base_id}")
     print("  2. Run llm_evaluator.py to enrich with LLM analysis")
     print()
 
