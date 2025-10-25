@@ -19,7 +19,7 @@ import sys
 import json
 import time
 import argparse
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from pyairtable import Api
@@ -41,6 +41,46 @@ class LLMEvaluation(BaseModel):
     follow_ups: str = Field(
         description="Bullet list of 1-3 follow-up questions to clarify gaps"
     )
+
+
+LLM_JSON_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "llm_evaluation",
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["summary", "score", "issues", "follow_ups"],
+            "properties": {
+                "summary": {"type": "string"},
+                "score": {"type": "integer", "minimum": 1, "maximum": 10},
+                "issues": {"type": "string"},
+                "follow_ups": {"type": "string"},
+            },
+        },
+        "strict": True,
+    },
+}
+
+
+def _extract_message_text(content: Any) -> str:
+    """
+    Normalize chat completion message content into a plain string.
+    """
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        text_parts = []
+        for part in content:
+            if isinstance(part, dict):
+                if part.get("type") == "text" and "text" in part:
+                    text_parts.append(part["text"])
+                elif "content" in part and isinstance(part["content"], str):
+                    text_parts.append(part["content"])
+        return "\n".join(t.strip() for t in text_parts if t and t.strip())
+
+    return str(content).strip()
 
 
 def call_openai_with_retry(
@@ -78,25 +118,52 @@ Focus on technical skills, experience relevance, and professional background."""
 
 Provide your evaluation in the requested format."""
 
+    supports_responses_api = hasattr(client, "responses") and hasattr(
+        getattr(client, "responses", None), "parse"
+    )
+
     for attempt in range(max_retries):
         try:
             print(f"    Calling OpenAI API (attempt {attempt + 1}/{max_retries})...")
 
-            response = client.responses.parse(
-                model="gpt-4o-mini",
-                instructions=instructions,
-                input=input_text,
-                text_format=LLMEvaluation,
-            )
+            if supports_responses_api:
+                response = client.responses.parse(
+                    model="gpt-4o-mini",
+                    instructions=instructions,
+                    input=input_text,
+                    text_format=LLMEvaluation,
+                )
 
-            # Extract parsed structured output
-            if hasattr(response, 'output_parsed') and response.output_parsed:
-                print(f"    ✓ OpenAI API call successful")
-                return response.output_parsed
+                # Extract parsed structured output
+                if hasattr(response, 'output_parsed') and response.output_parsed:
+                    print(f"    ✓ OpenAI API call successful")
+                    return response.output_parsed
+                else:
+                    print(f"    ✗ Unexpected response format: {type(response)}")
+                    print(f"    Available attrs: {[x for x in dir(response) if not x.startswith('_')][:10]}")
+                    return None
             else:
-                print(f"    ✗ Unexpected response format: {type(response)}")
-                print(f"    Available attrs: {[x for x in dir(response) if not x.startswith('_')][:10]}")
-                return None
+                # Fallback to Chat Completions with JSON schema response format
+                chat_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": input_text},
+                    ],
+                    response_format=LLM_JSON_RESPONSE_FORMAT,
+                    temperature=0.3,
+                    max_tokens=600,
+                )
+
+                message = chat_response.choices[0].message
+                content_text = _extract_message_text(message.content)
+                if not content_text:
+                    print("    ✗ Empty response content")
+                    return None
+
+                parsed = LLMEvaluation(**json.loads(content_text))
+                print(f"    ✓ OpenAI API call successful (chat.completions fallback)")
+                return parsed
 
         except RateLimitError as e:
             wait_time = (2 ** attempt) * 1  # Exponential backoff: 1s, 2s, 4s
