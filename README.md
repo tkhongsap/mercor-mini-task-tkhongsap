@@ -1,142 +1,192 @@
-# Mercor Mini-Task: Airtable Contractor Application System
+# Mercor Mini-Interview Task: Airtable Contractor Application System
 
-A comprehensive Airtable-based data model and automation system for managing contractor applications with LLM-powered evaluation.
+Automated Airtable-based contractor application system with Python automation for data processing, candidate evaluation, and LLM-powered enrichment.
+
+**For complete submission documentation, see [SUBMISSION.md](SUBMISSION.md)**
 
 ## Overview
 
-This project implements a multi-table form flow system that:
-- Collects contractor application data through structured Airtable forms
-- Compresses normalized data into JSON for efficient storage
-- Decompresses JSON back to normalized tables for editing
-- Auto-shortlists promising candidates based on multi-factor rules
-- Uses Anthropic Claude to evaluate, enrich, and sanity-check applications
+This project implements a complete data model and automation system that:
+1. Creates 5-table Airtable schema via API
+2. Compresses data from multiple tables into JSON format
+3. Auto-shortlists candidates based on multi-factor rules
+4. Uses LLM (OpenAI) to evaluate and enrich applications
 
-## Features
+**Airtable Base:** https://airtable.com/app5go7iUaSsc0uKs
 
-- **Multi-table Data Model**: Normalized schema with Applicants, Personal Details, Work Experience, and Salary Preferences tables
-- **JSON Compression/Decompression**: Efficient data storage and retrieval via Python scripts
-- **Automated Shortlisting**: Rule-based candidate evaluation (experience, compensation, location)
-- **LLM Integration**: Anthropic Claude API for intelligent application review
-- **Retry Logic**: Exponential backoff for API resilience
-- **Security**: Environment-based API key management
+## Quick Start
+
+### 1. Setup Environment
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure credentials
+cp env.template .env
+# Edit .env and add your:
+# - AIRTABLE_PERSONAL_ACCESS_TOKEN
+# - AIRTABLE_BASE_ID
+# - OPENAI_API_KEY
+```
+
+### 2. Run Full Automation Pipeline
+
+```bash
+# Sequential execution (scripts are numbered in order)
+python 01_setup_airtable_schema.py      # Creates all 5 tables
+python 02_generate_test_data.py         # Generates 10 test applicants
+python 03_compress_data.py              # Compresses to JSON
+python 04_shortlist_evaluator.py        # Evaluates & shortlists
+python 05_llm_evaluator.py              # LLM analysis (ALL applicants per PRD)
+```
+
+**Note:** Per PRD Section 6.2, the LLM evaluator processes ALL applicants (not just shortlisted ones), as the trigger is "after Compressed JSON is written".
+
+This creates all 5 tables in your Airtable base:
+- **Applicants** (parent table with 6 core fields)
+- **Personal Details** (one-to-one with Applicants)
+- **Work Experience** (one-to-many with Applicants)
+- **Salary Preferences** (one-to-one with Applicants)
+- **Shortlisted Leads** (auto-populated table)
+
+The script is idempotent - it checks if tables exist and only creates missing ones.
+
+### 3. Verify Setup
+
+```bash
+# Run unit tests to verify schema
+python tests/test_runner.py
+```
+
+Expected output: `✓ ALL TESTS PASSED - Schema is 100% PRD compliant!`
 
 ## Project Structure
 
 ```
-mercor-mini-task/
-├── scripts/
-│   ├── compress.py           # Compress child table data to JSON
-│   ├── decompress.py         # Decompress JSON to child tables
-│   ├── shortlist.py          # Shortlisting logic
-│   ├── llm_evaluator.py      # LLM evaluation with Claude
-│   └── config.py             # Configuration management
-├── docs/
-│   ├── AIRTABLE_SETUP.md     # Airtable configuration guide
-│   └── DOCUMENTATION.md      # Complete system documentation
-├── .env.example              # Environment variables template
-├── .gitignore
-├── requirements.txt
-├── prd.md                    # Original requirements
-└── README.md
+.
+├── README.md                          # Quick start guide
+├── SUBMISSION.md                      # Complete deliverables documentation
+├── DESIGN_DECISIONS.md                # Architectural choices explained
+├── prd.md                             # Project requirements
+│
+├── 01_setup_airtable_schema.py        # Step 1: Schema creation
+├── 02_generate_test_data.py           # Step 2: Test data generation
+├── 03_compress_data.py                # Step 3: JSON compression
+├── 04_shortlist_evaluator.py          # Step 4: Candidate evaluation
+├── 05_llm_evaluator.py                # Step 5: LLM enrichment
+│
+├── decompress_data.py                 # Optional: JSON decompression
+├── cleanup_test_data.py               # Utility: Clean test data
+├── logger.py                          # Logging utility module
+│
+├── requirements.txt                   # Python dependencies
+├── env.template                       # Environment variable template
+│
+└── tests/                             # Test suite (53 tests, 838 LOC)
+    ├── test_schema_setup.py          # 53 unit tests validating schema
+    ├── test_runner.py                # Test runner with summary reporting
+    └── verify_prd_schema.py          # PRD compliance verification script
 ```
 
-## Quick Start
+## Airtable Schema
 
-### 1. Prerequisites
+The system uses 5 linked tables:
 
-- Python 3.8 or higher
-- Airtable account with API access
-- Anthropic API key
+### Applicants (Parent Table)
+- Applicant ID (Python-managed number sequence)
+- Compressed JSON
+- Shortlist Status (checkbox)
+- LLM Summary, LLM Score, LLM Follow-Ups
 
-### 2. Installation
+### Personal Details
+- Full Name, Email, Location, LinkedIn
+- Link to Applicants (one-to-one)
 
+### Work Experience
+- Company, Title, Start, End, Technologies
+- Link to Applicants (one-to-many)
+
+### Salary Preferences
+- Preferred Rate, Minimum Rate, Currency, Availability
+- Link to Applicants (one-to-one)
+
+### Shortlisted Leads
+- Applicant link, Compressed JSON, Score Reason, Created At
+- Auto-populated when candidates meet criteria
+
+## Testing
+
+### Run All Tests
 ```bash
-# Clone the repository
-git clone https://github.com/tkhongsap/mercor-mini-task-tkhongsap.git
-cd mercor-mini-task-tkhongsap
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your API keys
+python tests/test_runner.py
 ```
 
-### 3. Airtable Setup
-
-Follow the detailed guide in `docs/AIRTABLE_SETUP.md` to:
-- Create the required tables and fields
-- Set up form views
-- Configure table relationships
-- Get your Airtable API credentials
-
-### 4. Usage
-
-**Compress data to JSON:**
+### Run PRD Verification
 ```bash
-python scripts/compress.py --applicant-id <APPLICANT_ID>
+python tests/verify_prd_schema.py
 ```
 
-**Decompress JSON to tables:**
-```bash
-python scripts/decompress.py --applicant-id <APPLICANT_ID>
-```
-
-**Run full evaluation pipeline:**
-```bash
-python scripts/compress.py --applicant-id <APPLICANT_ID> --evaluate
-```
-
-## Configuration
-
-Required environment variables in `.env`:
-
-```
-AIRTABLE_API_KEY=your_airtable_api_key
-AIRTABLE_BASE_ID=your_base_id
-ANTHROPIC_API_KEY=your_anthropic_api_key
-```
+### Test Coverage
+- 53 unit tests covering all 5 tables
+- Field type validation
+- Linked relationship verification
+- PRD compliance checking
 
 ## Documentation
 
-- **[Airtable Setup Guide](docs/AIRTABLE_SETUP.md)**: Step-by-step Airtable configuration
-- **[System Documentation](docs/DOCUMENTATION.md)**: Complete technical documentation
-- **[PRD](prd.md)**: Original project requirements
+- **[SUBMISSION.md](SUBMISSION.md)** - Complete submission documentation (setup, automations, LLM integration, customization)
+- **[DESIGN_DECISIONS.md](DESIGN_DECISIONS.md)** - Architectural choices explained
+- **[prd.md](prd.md)** - Original project requirements
 
-## Shortlisting Criteria
+## Implementation Status
 
-Candidates are automatically shortlisted when they meet ALL criteria:
+### ✅ All 5 PRD Goals Completed
+1. **Airtable Schema Setup** - Fully automated via `01_setup_airtable_schema.py`
+2. **JSON Compression** - Multi-table → JSON via `03_compress_data.py`
+3. **JSON Decompression** - JSON → tables via `decompress_data.py`
+4. **Auto-Shortlist** - 3-criteria evaluation via `04_shortlist_evaluator.py`
+5. **LLM Evaluation** - OpenAI integration via `05_llm_evaluator.py`
 
-| Criterion | Rule |
-|-----------|------|
-| Experience | ≥4 years total OR worked at tier-1 company (Google, Meta, OpenAI, etc.) |
-| Compensation | Preferred rate ≤$100/hr AND availability ≥20 hrs/week |
-| Location | Based in US, Canada, UK, Germany, or India |
+### Additional Features
+- Python-managed Applicant ID (100% automation)
+- Comprehensive unit tests (53 tests, all passing)
+- PRD compliance verification
+- Test data generation (`02_generate_test_data.py`)
+- Utility scripts (cleanup, decompression)
 
-## LLM Evaluation
+## Requirements
 
-The system uses Anthropic Claude to:
-- Summarize applicants in ≤75 words
-- Assign quality scores (1-10)
-- Flag missing or contradictory data
-- Suggest follow-up questions
+- Python 3.8+
+- Airtable account with Personal Access Token
+- OpenAI API key (for LLM evaluation)
 
-Features:
-- Retry logic with exponential backoff (3 attempts)
-- Token budget controls
-- Deduplication to avoid redundant API calls
+## Dependencies
 
-## Security
+```
+pyairtable>=2.3.0       # Airtable API client
+openai>=1.54.0          # OpenAI API for LLM evaluation
+python-dotenv>=1.0.0    # Environment variable management
+python-dateutil>=2.9.0  # Robust date parsing
+pydantic>=2.12.0        # Data validation for LLM responses
+pytest>=7.4.0           # Testing framework
+mypy>=1.8.0             # Type checking
+```
 
-- API keys stored in environment variables (never committed)
-- `.env` file excluded from Git via `.gitignore`
-- Template `.env.example` provided for setup
+## Key Features
 
-## License
+- **Automated Schema Setup** - Create all tables via Python script
+- **Type-Safe Fields** - Proper field types (email, URL, date, number with precision)
+- **Full Type Hints** - Comprehensive type annotations throughout codebase
+- **Robust Parsing** - Enhanced location and date validation with edge case handling
+- **Bidirectional Links** - Automatic relationship management
+- **Currency Support** - USD, EUR, GBP, CAD, INR
+- **Comprehensive Testing** - 53 unit tests with PRD validation
+- **Logging Infrastructure** - Color-coded logging utility module
+- **CI/CD Ready** - Exit codes for automation pipelines
 
-This project is created for the Mercor mini-interview task.
+---
 
-## Author
+**Complete submission documentation:** See [SUBMISSION.md](SUBMISSION.md) for detailed setup instructions, automation explanations, LLM integration details, and customization guide.
 
-Tkhongsap
+**View Airtable Base:** https://airtable.com/app5go7iUaSsc0uKs
