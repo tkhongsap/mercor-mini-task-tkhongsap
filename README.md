@@ -2,13 +2,17 @@
 
 Automated Airtable-based contractor application system with Python automation for data processing, candidate evaluation, and LLM-powered enrichment.
 
+**For complete submission documentation, see [SUBMISSION.md](SUBMISSION.md)**
+
 ## Overview
 
 This project implements a complete data model and automation system that:
-1. Collects contractor application data through multi-table Airtable forms
+1. Creates 5-table Airtable schema via API
 2. Compresses data from multiple tables into JSON format
 3. Auto-shortlists candidates based on multi-factor rules
-4. Uses LLM to evaluate and enrich applications
+4. Uses LLM (OpenAI) to evaluate and enrich applications
+
+**Airtable Base:** https://airtable.com/app5go7iUaSsc0uKs
 
 ## Quick Start
 
@@ -61,7 +65,9 @@ Expected output: `✓ ALL TESTS PASSED - Schema is 100% PRD compliant!`
 
 ```
 .
-├── README.md                          # This file
+├── README.md                          # Quick start guide
+├── SUBMISSION.md                      # Complete deliverables documentation
+├── DESIGN_DECISIONS.md                # Architectural choices explained
 ├── prd.md                             # Project requirements
 │
 ├── 01_setup_airtable_schema.py        # Step 1: Schema creation
@@ -77,17 +83,10 @@ Expected output: `✓ ALL TESTS PASSED - Schema is 100% PRD compliant!`
 ├── requirements.txt                   # Python dependencies
 ├── env.template                       # Environment variable template
 │
-├── docs/                              # Documentation
-│   ├── DELIVERABLES.md               # Requirements checklist
-│   ├── PROJECT_SUMMARY.md            # Implementation guide
-│   ├── RUN_TESTS.md                  # Testing guide
-│   └── TESTING_SUMMARY.md            # Test reports
-│
-└── tests/                             # Test suite (53 tests)
-    ├── test_runner.py                # Main test runner
-    ├── test_schema_setup.py          # Unit tests
-    ├── verify_prd_schema.py          # PRD compliance checker
-    └── helpers/                      # Test utilities
+└── tests/                             # Test suite (53 tests, 838 LOC)
+    ├── test_schema_setup.py          # 53 unit tests validating schema
+    ├── test_runner.py                # Test runner with summary reporting
+    └── verify_prd_schema.py          # PRD compliance verification script
 ```
 
 ## Airtable Schema
@@ -95,7 +94,7 @@ Expected output: `✓ ALL TESTS PASSED - Schema is 100% PRD compliant!`
 The system uses 5 linked tables:
 
 ### Applicants (Parent Table)
-- Applicant ID (auto number)
+- Applicant ID (Python-managed number sequence)
 - Compressed JSON
 - Shortlist Status (checkbox)
 - LLM Summary, LLM Score, LLM Follow-Ups
@@ -136,11 +135,9 @@ python tests/verify_prd_schema.py
 
 ## Documentation
 
+- **[SUBMISSION.md](SUBMISSION.md)** - Complete submission documentation (setup, automations, LLM integration, customization)
+- **[DESIGN_DECISIONS.md](DESIGN_DECISIONS.md)** - Architectural choices explained
 - **[prd.md](prd.md)** - Original project requirements
-- **[docs/DELIVERABLES.md](docs/DELIVERABLES.md)** - Complete requirements checklist
-- **[docs/PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md)** - Implementation roadmap
-- **[docs/RUN_TESTS.md](docs/RUN_TESTS.md)** - Detailed testing guide
-- **[docs/TESTING_SUMMARY.md](docs/TESTING_SUMMARY.md)** - Test reports
 
 ## Implementation Status
 
@@ -188,10 +185,8 @@ mypy>=1.8.0             # Type checking
 - **Logging Infrastructure** - Color-coded logging utility module
 - **CI/CD Ready** - Exit codes for automation pipelines
 
-## View Airtable Base
+---
 
-https://airtable.com/app5go7iUaSsc0uKs
+**Complete submission documentation:** See [SUBMISSION.md](SUBMISSION.md) for detailed setup instructions, automation explanations, LLM integration details, and customization guide.
 
-## License
-
-This is a mini-interview task project for Mercor.
+**View Airtable Base:** https://airtable.com/app5go7iUaSsc0uKs

@@ -109,11 +109,13 @@ class TestApplicantsTable(unittest.TestCase):
                          f"Required field '{field_name}' missing from Applicants table")
 
     def test_applicant_id_field_type(self):
-        """Test Applicant ID is auto number type"""
+        """Test Applicant ID is number type (Python-managed sequence)"""
         field = self.fields.get("Applicant ID")
         self.assertIsNotNone(field)
-        self.assertEqual(field.type, "autoNumber",
-                        "Applicant ID should be autoNumber type")
+        self.assertEqual(field.type, "number",
+                        "Applicant ID should be number type (Python-managed sequence)")
+        # Note: autoNumber cannot be created via Airtable API
+        # Implementation uses Python-managed sequence for full automation
 
     def test_compressed_json_field_type(self):
         """Test Compressed JSON is multiline text"""
