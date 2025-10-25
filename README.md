@@ -26,11 +26,15 @@ cp env.template .env
 # - OPENAI_API_KEY
 ```
 
-### 2. Create Airtable Schema
+### 2. Run Full Automation Pipeline
 
 ```bash
-# Run the setup script to create all tables (fully automated)
-python setup_airtable_schema.py
+# Sequential execution (scripts are numbered in order)
+python 01_setup_airtable_schema.py      # Creates all 5 tables
+python 02_generate_test_data.py         # Generates 10 test applicants
+python 03_compress_data.py              # Compresses to JSON
+python 04_shortlist_evaluator.py        # Evaluates & shortlists
+python 05_llm_evaluator.py              # LLM analysis
 ```
 
 This creates all 5 tables in your Airtable base:
@@ -55,23 +59,32 @@ Expected output: `✓ ALL TESTS PASSED - Schema is 100% PRD compliant!`
 
 ```
 .
-├── README.md                      # This file
-├── prd.md                         # Project requirements
-├── setup_airtable_schema.py       # Main setup script
-├── requirements.txt               # Python dependencies
-├── env.template                   # Environment variable template
+├── README.md                          # This file
+├── prd.md                             # Project requirements
 │
-├── docs/                          # Documentation
-│   ├── DELIVERABLES.md           # Requirements checklist
-│   ├── PROJECT_SUMMARY.md        # Implementation guide
-│   ├── RUN_TESTS.md              # Testing guide
-│   └── TESTING_SUMMARY.md        # Test reports
+├── 01_setup_airtable_schema.py        # Step 1: Schema creation
+├── 02_generate_test_data.py           # Step 2: Test data generation
+├── 03_compress_data.py                # Step 3: JSON compression
+├── 04_shortlist_evaluator.py          # Step 4: Candidate evaluation
+├── 05_llm_evaluator.py                # Step 5: LLM enrichment
 │
-└── tests/                         # Test suite
-    ├── test_runner.py            # Main test runner (53 tests)
-    ├── test_schema_setup.py      # Unit tests
-    ├── verify_prd_schema.py      # PRD compliance verification
-    └── helpers/                  # Test utilities
+├── decompress_data.py                 # Optional: JSON decompression
+├── cleanup_test_data.py               # Utility: Clean test data
+│
+├── requirements.txt                   # Python dependencies
+├── env.template                       # Environment variable template
+│
+├── docs/                              # Documentation
+│   ├── DELIVERABLES.md               # Requirements checklist
+│   ├── PROJECT_SUMMARY.md            # Implementation guide
+│   ├── RUN_TESTS.md                  # Testing guide
+│   └── TESTING_SUMMARY.md            # Test reports
+│
+└── tests/                             # Test suite (53 tests)
+    ├── test_runner.py                # Main test runner
+    ├── test_schema_setup.py          # Unit tests
+    ├── verify_prd_schema.py          # PRD compliance checker
+    └── helpers/                      # Test utilities
 ```
 
 ## Airtable Schema
@@ -128,19 +141,19 @@ python tests/verify_prd_schema.py
 
 ## Implementation Status
 
-### ✅ Completed
-- Fully automated schema setup (all 5 tables via one script)
-- Idempotent setup script (safe to re-run)
-- All fields with correct types and relationships
-- Automated Applicants table creation with 6 core fields
+### ✅ All 5 PRD Goals Completed
+1. **Airtable Schema Setup** - Fully automated via `01_setup_airtable_schema.py`
+2. **JSON Compression** - Multi-table → JSON via `03_compress_data.py`
+3. **JSON Decompression** - JSON → tables via `decompress_data.py`
+4. **Auto-Shortlist** - 3-criteria evaluation via `04_shortlist_evaluator.py`
+5. **LLM Evaluation** - OpenAI integration via `05_llm_evaluator.py`
+
+### Additional Features
+- Python-managed Applicant ID (100% automation)
 - Comprehensive unit tests (53 tests, all passing)
 - PRD compliance verification
-
-### 🚧 Next Steps
-1. Create Airtable forms for data collection
-2. Build Python compression/decompression scripts
-3. Build shortlist evaluator
-4. Build LLM evaluator integration
+- Test data generation (`02_generate_test_data.py`)
+- Utility scripts (cleanup, decompression)
 
 ## Requirements
 

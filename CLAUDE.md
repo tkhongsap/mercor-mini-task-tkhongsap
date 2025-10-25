@@ -24,7 +24,7 @@ cp env.template .env
 ### Schema Setup
 ```bash
 # Create all 5 Airtable tables via API (fully automated, idempotent)
-python setup_airtable_schema.py
+python 01_setup_airtable_schema.py
 
 # This creates:
 # - Applicants table (if it doesn't exist)
@@ -110,18 +110,18 @@ Applicants (Parent Table)
 
 ### Planned Python Scripts (Not Yet Implemented)
 
-**compress_data.py**: Gathers data from 3 child tables → builds JSON → writes to Applicants.Compressed JSON
+**03_compress_data.py**: Gathers data from 3 child tables → builds JSON → writes to Applicants.Compressed JSON
 
-**decompress_data.py**: Reads JSON → upserts back to child tables (for bulk editing)
+**de03_compress_data.py**: Reads JSON → upserts back to child tables (for bulk editing)
 
-**shortlist_evaluator.py**: Evaluates candidates against criteria → creates Shortlisted Leads records
+**04_shortlist_evaluator.py**: Evaluates candidates against criteria → creates Shortlisted Leads records
 
-**llm_evaluator.py**: Sends JSON to LLM → generates 75-word summary, 1-10 score, follow-up questions
+**05_llm_evaluator.py**: Sends JSON to LLM → generates 75-word summary, 1-10 score, follow-up questions
 
 ## Critical Implementation Details
 
 ### Airtable API Field Types
-When creating tables via `setup_airtable_schema.py`:
+When creating tables via `01_setup_airtable_schema.py`:
 - Email fields: `{"type": "email"}`
 - URL fields: `{"type": "url"}`
 - Date fields: `{"type": "date", "options": {"dateFormat": {"name": "us", "format": "M/D/YYYY"}}}`
@@ -156,7 +156,7 @@ Never hardcode credentials. The `.env` file is gitignored.
 
 ```
 .
-├── setup_airtable_schema.py    # Main schema creation script
+├── 01_setup_airtable_schema.py    # Main schema creation script
 ├── requirements.txt             # pyairtable, openai, python-dotenv, pytest
 ├── env.template                 # Template for credentials
 │
@@ -179,7 +179,7 @@ Never hardcode credentials. The `.env` file is gitignored.
 ## Common Workflows
 
 ### When Adding New Airtable Fields
-1. Update field definitions in `setup_airtable_schema.py`
+1. Update field definitions in `01_setup_airtable_schema.py`
 2. Run schema setup script (or manually update via Airtable UI)
 3. Add corresponding test cases to `tests/test_schema_setup.py`
 4. Run test suite to verify changes
