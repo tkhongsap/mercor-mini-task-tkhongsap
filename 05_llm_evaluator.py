@@ -2,15 +2,18 @@
 """
 LLM Evaluator - Airtable Contractor Application System
 
-Uses OpenAI Responses API to evaluate shortlisted candidates and enrich
-their applications with AI-generated summaries, scores, and follow-up questions.
+Uses OpenAI Responses API to evaluate ALL applicants and enrich their applications
+with AI-generated summaries, scores, and follow-up questions.
 
-Reads from Shortlisted Leads table, sends Compressed JSON to OpenAI, and writes
-results to LLM Summary, LLM Score, and LLM Follow-Ups fields in Applicants table.
+Per PRD Section 6.2: Trigger is "After Compressed JSON is written OR updated"
+This means ALL applicants are evaluated, not just shortlisted ones.
+
+Reads Compressed JSON from Applicants table, sends to OpenAI, and writes results
+to LLM Summary, LLM Score, and LLM Follow-Ups fields in Applicants table.
 
 Usage:
-    python llm_evaluator.py                 # Evaluate all shortlisted candidates
-    python llm_evaluator.py --id <id>       # Evaluate single candidate
+    python llm_evaluator.py                 # Evaluate ALL applicants
+    python llm_evaluator.py --id <id>       # Evaluate single applicant
     python llm_evaluator.py --force         # Re-evaluate even if already processed
 """
 
@@ -216,19 +219,19 @@ def should_skip_evaluation(applicant_fields: dict, force: bool = False) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Evaluate shortlisted candidates using OpenAI LLM",
+        description="Evaluate ALL applicants using OpenAI LLM (per PRD trigger: after Compressed JSON is written)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python llm_evaluator.py              Evaluate all shortlisted candidates
-  python llm_evaluator.py --id rec123  Evaluate single candidate
+  python llm_evaluator.py              Evaluate all applicants
+  python llm_evaluator.py --id rec123  Evaluate single applicant
   python llm_evaluator.py --force      Re-evaluate all (ignore cache)
         """
     )
     parser.add_argument(
         '--id',
         type=str,
-        help='Specific Shortlisted Leads record ID to process'
+        help='Specific Applicant record ID to process'
     )
     parser.add_argument(
         '--force',
@@ -267,7 +270,6 @@ Examples:
     try:
         airtable_api = Api(airtable_pat)
         base = airtable_api.base(base_id)
-        shortlisted_leads_table = base.table("Shortlisted Leads")
         applicants_table = base.table("Applicants")
 
         # Create OpenAI client with explicit API key
@@ -278,23 +280,23 @@ Examples:
         print(f"ERROR: Failed to initialize clients: {e}")
         sys.exit(1)
 
-    # Get candidates to evaluate
+    # Get applicants to evaluate (ALL applicants per PRD trigger)
     if args.id:
-        print(f"Evaluating single candidate: {args.id}")
+        print(f"Evaluating single applicant: {args.id}")
         print()
         try:
-            candidate = shortlisted_leads_table.get(args.id)
-            candidates = [candidate]
+            applicant = applicants_table.get(args.id)
+            applicants = [applicant]
         except Exception as e:
-            print(f"ERROR: Failed to get candidate {args.id}: {e}")
+            print(f"ERROR: Failed to get applicant {args.id}: {e}")
             sys.exit(1)
     else:
-        print("Evaluating all shortlisted candidates...")
+        print("Evaluating ALL applicants (per PRD: trigger is after Compressed JSON is written)...")
         print()
         try:
-            candidates = shortlisted_leads_table.all()
+            applicants = applicants_table.all()
         except Exception as e:
-            print(f"ERROR: Failed to get candidates: {e}")
+            print(f"ERROR: Failed to get applicants: {e}")
             sys.exit(1)
 
     print("=" * 70)
@@ -306,40 +308,27 @@ Examples:
     skip_count = 0
     error_count = 0
 
-    for idx, candidate in enumerate(candidates, 1):
-        candidate_id = candidate['id']
-        fields = candidate['fields']
+    for idx, applicant in enumerate(applicants, 1):
+        applicant_id = applicant['id']
+        fields = applicant['fields']
 
         # Get compressed JSON
         compressed_json_str = fields.get('Compressed JSON', '')
         if not compressed_json_str:
-            print(f"[{idx}/{len(candidates)}] {candidate_id}: Skipped (no compressed JSON)")
-            error_count += 1
+            print(f"[{idx}/{len(applicants)}] {applicant_id}: Skipped (no compressed JSON)")
+            skip_count += 1
             print()
             continue
-
-        # Get applicant ID from linked record
-        applicant_ids = fields.get('Applicant', [])
-        if not applicant_ids:
-            print(f"[{idx}/{len(candidates)}] {candidate_id}: Skipped (no applicant link)")
-            error_count += 1
-            print()
-            continue
-
-        applicant_id = applicant_ids[0]
 
         try:
             # Parse JSON to get candidate name
             applicant_data = json.loads(compressed_json_str)
             name = applicant_data.get('personal', {}).get('name', 'Unknown')
 
-            print(f"[{idx}/{len(candidates)}] {name} ({applicant_id}):")
+            print(f"[{idx}/{len(applicants)}] {name} ({applicant_id}):")
 
             # Check if already evaluated (caching)
-            applicant_record = applicants_table.get(applicant_id)
-            applicant_fields = applicant_record['fields']
-
-            if should_skip_evaluation(applicant_fields, args.force):
+            if should_skip_evaluation(fields, args.force):
                 print(f"  → Skipped (already evaluated, use --force to re-evaluate)")
                 skip_count += 1
                 print()
@@ -388,9 +377,10 @@ Examples:
     print("=" * 70)
     print("Summary")
     print("=" * 70)
-    print(f"Total candidates: {len(candidates)}")
+    print(f"Total applicants: {len(applicants)}")
     print(f"✓ Successfully evaluated: {success_count}")
     print(f"→ Skipped (already evaluated): {skip_count}")
+    print(f"✗ Skipped (no JSON): {len(applicants) - success_count - skip_count - error_count}")
     print(f"✗ Errors: {error_count}")
     print()
 
@@ -398,7 +388,7 @@ Examples:
         print("Next steps:")
         print("  1. View LLM fields in Airtable: https://airtable.com/{base_id}")
         print("  2. Review LLM Summary, LLM Score, and LLM Follow-Ups columns")
-        print("  3. Use insights for candidate screening and follow-up")
+        print("  3. Use insights for ALL candidates (shortlisted and rejected)")
     print()
 
 

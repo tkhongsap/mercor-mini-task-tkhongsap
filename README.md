@@ -34,8 +34,10 @@ python 01_setup_airtable_schema.py      # Creates all 5 tables
 python 02_generate_test_data.py         # Generates 10 test applicants
 python 03_compress_data.py              # Compresses to JSON
 python 04_shortlist_evaluator.py        # Evaluates & shortlists
-python 05_llm_evaluator.py              # LLM analysis
+python 05_llm_evaluator.py              # LLM analysis (ALL applicants per PRD)
 ```
+
+**Note:** Per PRD Section 6.2, the LLM evaluator processes ALL applicants (not just shortlisted ones), as the trigger is "after Compressed JSON is written".
 
 This creates all 5 tables in your Airtable base:
 - **Applicants** (parent table with 6 core fields)
