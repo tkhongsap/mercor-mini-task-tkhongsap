@@ -18,7 +18,7 @@ import sys
 from dotenv import load_dotenv
 from pyairtable import Api
 
-def main():
+def main() -> None:
     print("=" * 60)
     print("Airtable Schema Setup - Contractor Application System")
     print("=" * 60)

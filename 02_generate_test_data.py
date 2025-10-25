@@ -18,7 +18,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pyairtable import Api
 
-def main():
+def main() -> None:
     print("=" * 70)
     print("Test Data Generator - Contractor Application System")
     print("=" * 70)

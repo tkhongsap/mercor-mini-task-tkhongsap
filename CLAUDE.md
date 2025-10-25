@@ -107,6 +107,10 @@ Applicants (Parent Table)
 1. **Experience**: ≥4 years total OR worked at tier-1 company (Google, Meta, OpenAI, etc.)
 2. **Compensation**: Preferred Rate ≤$100 USD/hour AND Availability ≥20 hrs/week
 3. **Location**: In US, Canada, UK, Germany, or India
+   - Enhanced with country code support (US, CA, UK/GB, DE, IN)
+   - Major city matching (NYC, SF, Toronto, London, Berlin, Bangalore, etc.)
+   - Blacklist for false positives (Australia, Austria, Indonesia, Indiana)
+   - Improved word boundary detection to prevent substring matches
 
 ### Planned Python Scripts (Not Yet Implemented)
 
@@ -227,6 +231,38 @@ When implementing planned scripts:
 - Include comprehensive error handling
 - Log operations for debugging
 - Use configuration-driven behavior (easy to modify criteria)
+
+## Code Quality & Type Safety
+
+### Type Hints
+All Python scripts now have comprehensive type hints:
+- Function signatures include parameter and return types
+- Using `typing` module: `Optional`, `Dict`, `List`, `Tuple`, `Any`
+- Type checking available via `mypy *.py`
+
+### Logging Infrastructure
+- `logger.py` provides centralized logging configuration
+- Color-coded console output with timestamps
+- Supports DEBUG, INFO, WARNING, ERROR levels
+- Example usage:
+  ```python
+  from logger import get_logger
+  logger = get_logger(__name__)
+  logger.info("Processing applicant...")
+  ```
+
+### Enhanced Robustness
+**Location Matching** (`04_shortlist_evaluator.py:110-154`):
+- Country code detection (US, CA, UK, DE, IN)
+- Major city support (50+ cities across 5 countries)
+- Blacklist to prevent false matches (Australia, Austria, Indonesia, Indiana)
+- Improved word boundary detection
+
+**Date Parsing** (`04_shortlist_evaluator.py:61-117`):
+- Handles "present", "current", "ongoing", "now" for end dates
+- Validates impossible dates (future starts, end before start)
+- Caps unrealistic tenures at 50 years
+- Better error messages for debugging
 
 ## Reference Documentation
 

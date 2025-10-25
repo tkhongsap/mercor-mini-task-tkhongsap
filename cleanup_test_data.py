@@ -10,7 +10,7 @@ import sys
 from dotenv import load_dotenv
 from pyairtable import Api
 
-def main():
+def main() -> None:
     print("=" * 70)
     print("CLEANUP TEST DATA - Delete All Records")
     print("=" * 70)

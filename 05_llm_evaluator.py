@@ -22,7 +22,7 @@ import sys
 import json
 import time
 import argparse
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from pyairtable import Api
@@ -88,7 +88,7 @@ def _extract_message_text(content: Any) -> str:
 
 def call_openai_with_retry(
     client: OpenAI,
-    applicant_data: dict,
+    applicant_data: Dict[str, Any],
     max_retries: int = 3
 ) -> Optional[LLMEvaluation]:
     """
@@ -131,7 +131,7 @@ Provide your evaluation in the requested format."""
 
             if supports_responses_api:
                 response = client.responses.parse(
-                    model="gpt-4o-mini",
+                    model="gpt-5-mini",
                     instructions=instructions,
                     input=input_text,
                     text_format=LLMEvaluation,
@@ -148,7 +148,7 @@ Provide your evaluation in the requested format."""
             else:
                 # Fallback to Chat Completions with JSON schema response format
                 chat_response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model="gpt-5-mini",
                     messages=[
                         {"role": "system", "content": instructions},
                         {"role": "user", "content": input_text},
@@ -195,7 +195,7 @@ Provide your evaluation in the requested format."""
     return None
 
 
-def should_skip_evaluation(applicant_fields: dict, force: bool = False) -> bool:
+def should_skip_evaluation(applicant_fields: Dict[str, Any], force: bool = False) -> bool:
     """
     Check if applicant already has LLM evaluation (caching).
 
@@ -217,7 +217,7 @@ def should_skip_evaluation(applicant_fields: dict, force: bool = False) -> bool:
     return has_summary and has_score and has_followups
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Evaluate ALL applicants using OpenAI LLM (per PRD trigger: after Compressed JSON is written)",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -215,7 +215,7 @@ def decompress_salary_preferences(
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Decompress JSON back to normalized Airtable tables",
         formatter_class=argparse.RawDescriptionHelpFormatter,

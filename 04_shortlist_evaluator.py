@@ -20,6 +20,7 @@ import sys
 import json
 import argparse
 from datetime import datetime
+from typing import List, Dict, Tuple, Optional, Any
 from dateutil.parser import parse as parse_date
 from dotenv import load_dotenv
 from pyairtable import Api
@@ -30,19 +31,37 @@ TIER1_COMPANIES = [
     'netflix', 'tesla', 'spacex', 'uber', 'airbnb', 'stripe'
 ]
 
-# Approved locations per PRD
-# Using specific patterns to avoid false matches
+# Approved locations per PRD with country codes and major cities
 APPROVED_LOCATIONS = {
-    'united states', 'usa', 'us ', ' us', 'america',  # US variations
-    'canada', 'canadian',                               # Canada
-    'united kingdom', 'uk ', ' uk', 'britain', 'england', 'scotland', 'wales',  # UK
-    'germany', 'deutschland', 'german',                 # Germany
-    'india', 'indian', 'bangalore', 'mumbai', 'delhi'  # India (avoid matching "australia")
+    # United States
+    'united states', 'usa', 'us ', ' us', 'america', 'american',
+    'new york', 'nyc', 'san francisco', 'sf', 'los angeles', 'la',
+    'seattle', 'wa', 'austin', 'tx', 'boston', 'ma', 'chicago', 'il',
+
+    # Canada
+    'canada', 'canadian', 'ca ',
+    'toronto', 'on', 'vancouver', 'bc', 'montreal', 'qc',
+
+    # United Kingdom
+    'united kingdom', 'uk ', ' uk', 'britain', 'british', 'england', 'scotland', 'wales',
+    'london', 'manchester', 'birmingham', 'edinburgh',
+
+    # Germany
+    'germany', 'deutschland', 'german', 'de ',
+    'berlin', 'munich', 'hamburg', 'frankfurt', 'cologne',
+
+    # India
+    'india', 'indian', 'in ',
+    'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi', 'hyderabad', 'chennai', 'pune'
 }
 
-def calculate_years_of_experience(experience_list):
+# Country codes for exact matching
+APPROVED_COUNTRY_CODES = {'us', 'usa', 'can', 'ca', 'uk', 'gb', 'de', 'deu', 'in', 'ind'}
+
+def calculate_years_of_experience(experience_list: List[Dict[str, Any]]) -> float:
     """
     Calculate total years of experience from work history.
+    Handles various date formats, "present/current/ongoing" jobs, and validation.
 
     Args:
         experience_list: List of experience dicts with start and end dates
@@ -54,24 +73,50 @@ def calculate_years_of_experience(experience_list):
 
     for job in experience_list:
         try:
-            start = parse_date(job.get('start', ''))
-            end_str = job.get('end', '')
+            start_str = job.get('start', '').strip()
+            end_str = job.get('end', '').strip()
 
-            # Handle "present" or current jobs
-            if end_str.lower() in ['present', 'current', '']:
+            if not start_str:
+                print(f"    Warning: No start date for {job.get('company', 'Unknown')}, skipping")
+                continue
+
+            # Parse start date
+            start = parse_date(start_str)
+
+            # Handle "present", "current", "ongoing", or empty end dates
+            if not end_str or end_str.lower() in ['present', 'current', 'ongoing', 'now']:
                 end = datetime.now()
             else:
                 end = parse_date(end_str)
 
+            # Validation: check for impossible dates
+            if start > datetime.now():
+                print(f"    Warning: Future start date for {job.get('company', 'Unknown')}, skipping")
+                continue
+
+            if end < start:
+                print(f"    Warning: End date before start date for {job.get('company', 'Unknown')}, skipping")
+                continue
+
             days = (end - start).days
+
+            # Sanity check: avoid counting ridiculously long tenures (>50 years)
+            if days > 365.25 * 50:
+                print(f"    Warning: Unusually long tenure ({days/365.25:.1f} years) for {job.get('company', 'Unknown')}, capping at 50 years")
+                days = 365.25 * 50
+
             total_days += days
+
+        except ValueError as e:
+            print(f"    Warning: Invalid date format for {job.get('company', 'Unknown')}: {e}")
+            continue
         except Exception as e:
             print(f"    Warning: Could not parse dates for {job.get('company', 'Unknown')}: {e}")
             continue
 
     return total_days / 365.25  # Account for leap years
 
-def check_tier1_company(experience_list):
+def check_tier1_company(experience_list: List[Dict[str, Any]]) -> Tuple[bool, Optional[str]]:
     """
     Check if candidate worked at any tier-1 company.
 
@@ -89,10 +134,11 @@ def check_tier1_company(experience_list):
 
     return False, None
 
-def check_location(location_str):
+def check_location(location_str: str) -> bool:
     """
     Check if location is in approved regions.
-    Uses word boundary matching to avoid false matches (e.g., "us" in "australia").
+    Uses improved word boundary matching and country code detection.
+    Prevents false matches like "India" matching "Indiana".
 
     Args:
         location_str: Location string from applicant
@@ -100,20 +146,41 @@ def check_location(location_str):
     Returns:
         bool: True if in approved region
     """
-    location_lower = location_str.lower()
+    if not location_str:
+        return False
 
-    # Split location into words to avoid substring false matches
-    location_words = location_lower.replace(',', ' ').split()
+    location_lower = location_str.lower().strip()
 
+    # Blacklist patterns that should NOT match (avoid false positives)
+    blacklist = ['australia', 'austria', 'indonesia', 'indiana']
+    for blacklisted in blacklist:
+        if blacklisted in location_lower:
+            return False
+
+    # Check for exact country code matches (US, CA, UK, DE, IN)
+    location_words = location_lower.replace(',', ' ').replace('.', ' ').split()
+    for word in location_words:
+        cleaned_word = word.strip()
+        if cleaned_word in APPROVED_COUNTRY_CODES:
+            return True
+
+    # Check for approved location phrases
     for approved in APPROVED_LOCATIONS:
-        # Check if approved location is a standalone word or part of the location
-        for word in location_words:
-            if approved in word or word in approved:
-                return True
+        # Use word boundaries to avoid substring matches
+        # e.g., " india " in " new delhi, india " but not " indiana "
+        padded_location = f" {location_lower} "
+        padded_approved = f" {approved} "
+
+        if padded_approved in padded_location:
+            return True
+
+        # Also check if approved term is a complete word
+        if f" {approved}," in padded_location or f",{approved} " in padded_location:
+            return True
 
     return False
 
-def evaluate_applicant(applicant_data):
+def evaluate_applicant(applicant_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Dict[str, Any]]]:
     """
     Evaluate if applicant meets all qualification criteria.
 
@@ -178,7 +245,11 @@ def evaluate_applicant(applicant_data):
 
     return all_pass, reasons
 
-def generate_score_reason(qualifies, reasons, applicant_data):
+def generate_score_reason(
+    qualifies: bool,
+    reasons: Dict[str, Dict[str, Any]],
+    applicant_data: Dict[str, Any]
+) -> str:
     """
     Generate human-readable score reason.
 
@@ -207,7 +278,7 @@ def generate_score_reason(qualifies, reasons, applicant_data):
         return f"""Candidate does NOT qualify:
 {chr(10).join(['- ' + c for c in failed_criteria])}"""
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Evaluate applicants and create Shortlisted Leads records"
     )

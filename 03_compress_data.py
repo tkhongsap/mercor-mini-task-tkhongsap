@@ -16,10 +16,15 @@ import sys
 import json
 import argparse
 from datetime import datetime
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 from pyairtable import Api
 
-def compress_applicant_data(api, base_id, applicant_record):
+def compress_applicant_data(
+    api: Api,
+    base_id: str,
+    applicant_record: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
     """
     Compress data from child tables into JSON for a single applicant.
 
@@ -102,7 +107,7 @@ def compress_applicant_data(api, base_id, applicant_record):
         print(f"  ERROR: Failed to compress data for applicant {applicant_id}: {e}")
         return None
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compress applicant data from child tables into JSON",
         formatter_class=argparse.RawDescriptionHelpFormatter,
