@@ -354,6 +354,19 @@ def main():
     print("=" * 70)
     print()
 
+    # Query max existing Applicant ID to continue sequence
+    print("Finding max existing Applicant ID...")
+    existing_applicants = applicants_table.all()
+    max_id = 0
+    for record in existing_applicants:
+        current_id = record['fields'].get('Applicant ID', 0)
+        if current_id and current_id > max_id:
+            max_id = current_id
+
+    next_id = max_id + 1
+    print(f"✓ Starting from Applicant ID: {next_id}")
+    print()
+
     created_count = 0
     qualified_count = 0
 
@@ -361,10 +374,13 @@ def main():
         print(f"[{idx}/10] Creating {applicant_data['name']}...")
 
         try:
-            # Step 1: Create Applicants record
-            applicant_record = applicants_table.create({})
+            # Step 1: Create Applicants record with managed ID
+            applicant_record = applicants_table.create({
+                "Applicant ID": next_id
+            })
             applicant_id = applicant_record['id']
-            print(f"  ✓ Applicants record created: {applicant_id}")
+            print(f"  ✓ Applicants record created: {applicant_id} (Applicant ID: {next_id})")
+            next_id += 1  # Increment for next applicant
 
             # Step 2: Create Personal Details record
             personal_record = personal_details_table.create({

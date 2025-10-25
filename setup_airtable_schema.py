@@ -68,9 +68,18 @@ def main():
         else:
             print("Applicants table not found - creating it now...")
 
-            # Create Applicants table with 5 fields (autoNumber cannot be created via API)
+            # Create Applicants table with 6 fields
             # Note: The first field becomes the primary field
+            # Using plain number field since autoNumber/formula cannot be created via API
+            # The ID sequence will be managed by Python scripts
             applicants_fields = [
+                {
+                    "name": "Applicant ID",
+                    "type": "number",
+                    "options": {
+                        "precision": 0  # Integer values only
+                    }
+                },
                 {
                     "name": "Compressed JSON",
                     "type": "multilineText"
@@ -106,15 +115,9 @@ def main():
             applicants_table_id = applicants_table.id
             print(f"✓ Applicants table created")
             print(f"  Table ID: {applicants_table_id}")
-            print(f"  Fields: Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups")
+            print(f"  Fields: Applicant ID (number), Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups")
+            print(f"  Note: Applicant ID sequence managed by Python scripts")
             print()
-            print("  NOTE: Due to Airtable API limitations, the 'Applicant ID' (autoNumber) field")
-            print("  must be added manually via the Airtable web interface:")
-            print("  1. Go to the Applicants table in your base")
-            print("  2. Click '+' to add a new field")
-            print("  3. Choose 'Autonumber' as the field type")
-            print("  4. Name it 'Applicant ID'")
-            print("  5. This will serve as the unique identifier for each applicant")
 
     except Exception as e:
         print(f"ERROR: Failed to check/create Applicants table: {e}")
@@ -286,8 +289,8 @@ def main():
     print("=" * 60)
     print()
     print("Summary - All 5 Tables Created:")
-    print("  ✓ Applicants - 5 fields (Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups)")
-    print("    Note: 'Applicant ID' (autoNumber) must be added manually via web interface")
+    print("  ✓ Applicants - 6 fields (Applicant ID [number], Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups)")
+    print("     Applicant ID is Python-managed sequence for full automation")
     print("  ✓ Personal Details - 5 fields (Full Name, Email, Location, LinkedIn, Applicant ID)")
     print("  ✓ Work Experience - 6 fields (Company, Title, Start, End, Technologies, Applicant ID)")
     print("  ✓ Salary Preferences - 5 fields (Preferred Rate, Minimum Rate, Currency, Availability, Applicant ID)")
@@ -301,10 +304,9 @@ def main():
     print("     - Shortlisted Leads (one-to-many)")
     print()
     print("Next Steps:")
-    print("  1. Add 'Applicant ID' (autoNumber) field to Applicants table manually")
-    print("  2. Run tests to verify schema: python tests/test_runner.py")
+    print("  1. Run tests to verify schema: python tests/test_runner.py")
+    print("  2. Generate test data: python generate_test_data.py")
     print("  3. View your base: https://airtable.com/{base_id}")
-    print("  4. Create forms for data collection (Phase 2)")
     print()
 
 if __name__ == "__main__":
