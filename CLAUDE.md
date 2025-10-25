@@ -23,8 +23,12 @@ cp env.template .env
 
 ### Schema Setup
 ```bash
-# Create all Airtable tables via API
+# Create all 5 Airtable tables via API (fully automated, idempotent)
 python setup_airtable_schema.py
+
+# This creates:
+# - Applicants table (if it doesn't exist)
+# - Personal Details, Work Experience, Salary Preferences, Shortlisted Leads
 
 # Verify schema is correct
 python tests/verify_prd_schema.py

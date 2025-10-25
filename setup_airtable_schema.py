@@ -2,13 +2,15 @@
 """
 Airtable Schema Setup Script
 
-This script automatically creates the 4 remaining tables in the Airtable base:
-1. Personal Details
-2. Work Experience
-3. Salary Preferences
-4. Shortlisted Leads
+This script automatically creates all 5 tables in the Airtable base:
+1. Applicants (parent table)
+2. Personal Details
+3. Work Experience
+4. Salary Preferences
+5. Shortlisted Leads
 
-All tables are created with exact field specifications from DELIVERABLES.md.
+All tables are created with exact field specifications from PRD and DELIVERABLES.md.
+The script is idempotent - it checks if Applicants table exists and creates it if needed.
 """
 
 import os
@@ -48,9 +50,9 @@ def main():
         print(f"ERROR: Failed to connect to Airtable: {e}")
         sys.exit(1)
 
-    # Get schema to find Applicants table ID
+    # Check if Applicants table exists, create if needed
     print()
-    print("Getting base schema...")
+    print("Checking for Applicants table...")
     try:
         schema = base.schema()
         applicants_table = None
@@ -59,21 +61,68 @@ def main():
                 applicants_table = table
                 break
 
-        if not applicants_table:
-            print("ERROR: Applicants table not found in base")
-            print("Please create the Applicants table first")
-            sys.exit(1)
+        if applicants_table:
+            print(f"✓ Found existing Applicants table")
+            print(f"  Table ID: {applicants_table.id}")
+            applicants_table_id = applicants_table.id
+        else:
+            print("Applicants table not found - creating it now...")
 
-        applicants_table_id = applicants_table.id
-        print(f"✓ Found Applicants table")
-        print(f"  Table ID: {applicants_table_id}")
+            # Create Applicants table with 5 fields (autoNumber cannot be created via API)
+            # Note: The first field becomes the primary field
+            applicants_fields = [
+                {
+                    "name": "Compressed JSON",
+                    "type": "multilineText"
+                },
+                {
+                    "name": "Shortlist Status",
+                    "type": "checkbox",
+                    "options": {
+                        "icon": "check",
+                        "color": "greenBright"
+                    }
+                },
+                {
+                    "name": "LLM Summary",
+                    "type": "multilineText"
+                },
+                {
+                    "name": "LLM Score",
+                    "type": "number",
+                    "options": {"precision": 0}
+                },
+                {
+                    "name": "LLM Follow-Ups",
+                    "type": "multilineText"
+                }
+            ]
+
+            applicants_table = base.create_table(
+                "Applicants",
+                applicants_fields,
+                description="Parent table storing applicant data and LLM evaluation results"
+            )
+            applicants_table_id = applicants_table.id
+            print(f"✓ Applicants table created")
+            print(f"  Table ID: {applicants_table_id}")
+            print(f"  Fields: Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups")
+            print()
+            print("  NOTE: Due to Airtable API limitations, the 'Applicant ID' (autoNumber) field")
+            print("  must be added manually via the Airtable web interface:")
+            print("  1. Go to the Applicants table in your base")
+            print("  2. Click '+' to add a new field")
+            print("  3. Choose 'Autonumber' as the field type")
+            print("  4. Name it 'Applicant ID'")
+            print("  5. This will serve as the unique identifier for each applicant")
+
     except Exception as e:
-        print(f"ERROR: Failed to get base schema: {e}")
+        print(f"ERROR: Failed to check/create Applicants table: {e}")
         sys.exit(1)
 
     print()
     print("=" * 60)
-    print("Creating Tables...")
+    print("Creating Child Tables...")
     print("=" * 60)
     print()
 
@@ -201,6 +250,7 @@ def main():
     print("4. Creating Shortlisted Leads table...")
     try:
         shortlisted_leads_fields = [
+            {"name": "Score Reason", "type": "multilineText"},
             {
                 "name": "Applicant",
                 "type": "multipleRecordLinks",
@@ -209,7 +259,6 @@ def main():
                 }
             },
             {"name": "Compressed JSON", "type": "multilineText"},
-            {"name": "Score Reason", "type": "multilineText"},
             {
                 "name": "Created At",
                 "type": "dateTime",
@@ -233,25 +282,29 @@ def main():
 
     print()
     print("=" * 60)
-    print("SUCCESS! Table Creation Complete")
+    print("SUCCESS! Schema Setup Complete")
     print("=" * 60)
     print()
-    print("Summary:")
+    print("Summary - All 5 Tables Created:")
+    print("  ✓ Applicants - 5 fields (Compressed JSON, Shortlist Status, LLM Summary, LLM Score, LLM Follow-Ups)")
+    print("    Note: 'Applicant ID' (autoNumber) must be added manually via web interface")
     print("  ✓ Personal Details - 5 fields (Full Name, Email, Location, LinkedIn, Applicant ID)")
     print("  ✓ Work Experience - 6 fields (Company, Title, Start, End, Technologies, Applicant ID)")
     print("  ✓ Salary Preferences - 5 fields (Preferred Rate, Minimum Rate, Currency, Availability, Applicant ID)")
     print("  ✓ Shortlisted Leads - 4 fields (Applicant, Compressed JSON, Score Reason, Created At)")
     print()
-    print("Next Steps:")
-    print("  1. Go to your Airtable base and verify all tables were created")
-    print("  2. Check that Applicants table has 4 new linked fields:")
-    print("     - Personal Details")
-    print("     - Work Experience")
-    print("     - Salary Preferences")
-    print("     - Shortlisted")
-    print("  3. Proceed to create forms for data collection")
+    print("Linked Relationships:")
+    print("  The Applicants table now has 4 auto-generated linked fields:")
+    print("     - Personal Details (one-to-one)")
+    print("     - Work Experience (one-to-many)")
+    print("     - Salary Preferences (one-to-one)")
+    print("     - Shortlisted Leads (one-to-many)")
     print()
-    print(f"View your base: https://airtable.com/{base_id}")
+    print("Next Steps:")
+    print("  1. Add 'Applicant ID' (autoNumber) field to Applicants table manually")
+    print("  2. Run tests to verify schema: python tests/test_runner.py")
+    print("  3. View your base: https://airtable.com/{base_id}")
+    print("  4. Create forms for data collection (Phase 2)")
     print()
 
 if __name__ == "__main__":

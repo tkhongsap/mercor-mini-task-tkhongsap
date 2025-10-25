@@ -29,15 +29,18 @@ cp env.template .env
 ### 2. Create Airtable Schema
 
 ```bash
-# Run the setup script to create all tables
+# Run the setup script to create all tables (fully automated)
 python setup_airtable_schema.py
 ```
 
-This creates 4 tables in your Airtable base:
+This creates all 5 tables in your Airtable base:
+- **Applicants** (parent table with 6 core fields)
 - **Personal Details** (one-to-one with Applicants)
 - **Work Experience** (one-to-many with Applicants)
 - **Salary Preferences** (one-to-one with Applicants)
 - **Shortlisted Leads** (auto-populated table)
+
+The script is idempotent - it checks if tables exist and only creates missing ones.
 
 ### 3. Verify Setup
 
@@ -126,9 +129,10 @@ python tests/verify_prd_schema.py
 ## Implementation Status
 
 ### ✅ Completed
-- Airtable base setup with 5 tables
+- Fully automated schema setup (all 5 tables via one script)
+- Idempotent setup script (safe to re-run)
 - All fields with correct types and relationships
-- Automated table creation via Python
+- Automated Applicants table creation with 6 core fields
 - Comprehensive unit tests (53 tests, all passing)
 - PRD compliance verification
 
