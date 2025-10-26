@@ -3,6 +3,7 @@
 **Project:** Airtable Multi-Table Form + JSON Automation System
 **Candidate:** [Your Name]
 **Date:** 2025-10-25
+**GitHub Repository:** https://github.com/tkhongsap/mercor-mini-task-tkhongsap
 
 ---
 
@@ -21,7 +22,11 @@
 
 ## Airtable Base Access
 
-**Share Link:** https://airtable.com/app5go7iUaSsc0uKs
+**Airtable Base:** https://airtable.com/app5go7iUaSsc0uKs
+
+**GitHub Repository:** https://github.com/tkhongsap/mercor-mini-task-tkhongsap
+
+All Python automation scripts (01-05.py), tests, and source code are available in the GitHub repository above.
 
 ### Base Contents
 
