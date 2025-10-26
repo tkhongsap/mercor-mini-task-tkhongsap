@@ -1,7 +1,6 @@
 # Mercor Mini-Interview Task: Submission Documentation
 
 **Project:** Airtable Multi-Table Form + JSON Automation System
-**Candidate:** [Your Name]
 **Date:** 2025-10-25
 **GitHub Repository:** https://github.com/tkhongsap/mercor-mini-task-tkhongsap
 
